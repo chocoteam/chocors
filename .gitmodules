@@ -1,0 +1,4 @@
+[submodule "choco-solver-sys/choco-solver-capi"]
+	path = choco-solver-sys/choco-solver-capi
+	url = https://github.com/chocoteam/choco-solver-capi.git
+	branch = master
