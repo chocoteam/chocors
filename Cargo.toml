@@ -50,7 +50,7 @@ unused-qualifications = "warn"
 unused_results = "warn"
 variant-size-differences = "warn"
 
-[lints.clippy]
+[workspace.lints.clippy]
 # Must rules
 as_ptr_cast_mut = "deny"
 declare_interior_mutable_const = "deny"
