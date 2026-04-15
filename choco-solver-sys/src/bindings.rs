@@ -10,33 +10,21 @@
 pub const NO_PROTECTION_DOMAIN: u32 = 0;
 pub const NEW_PROTECTION_DOMAIN: i32 = -1;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct __graal_isolate_t {
     _unused: [u8; 0],
 }
 pub type graal_isolate_t = __graal_isolate_t;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct __graal_isolatethread_t {
     _unused: [u8; 0],
 }
 pub type graal_isolatethread_t = __graal_isolatethread_t;
-pub type __graal_uword = ::std::os::raw::c_ulonglong;
 pub const __graal_create_isolate_params_version: _bindgen_ty_1 = 4;
-pub type _bindgen_ty_1 = ::std::os::raw::c_int;
+pub type _bindgen_ty_1 = ::std::os::raw::c_uint;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[repr(align(8))]
 pub struct __graal_create_isolate_params_t {
-    pub version: ::std::os::raw::c_int,
-    pub reserved_address_space_size: __graal_uword,
-    pub auxiliary_image_path: *const ::std::os::raw::c_char,
-    pub auxiliary_image_reserved_space_size: __graal_uword,
-    pub _reserved_1: ::std::os::raw::c_int,
-    pub _reserved_2: *mut *mut ::std::os::raw::c_char,
-    pub pkey: ::std::os::raw::c_int,
-    pub _reserved_3: ::std::os::raw::c_char,
-    pub _reserved_4: ::std::os::raw::c_char,
-    pub _reserved_5: ::std::os::raw::c_char,
+    pub _bindgen_opaque_blob: [u64; 7usize],
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
@@ -44,31 +32,6 @@ const _: () = {
         [::std::mem::size_of::<__graal_create_isolate_params_t>() - 56usize];
     ["Alignment of __graal_create_isolate_params_t"]
         [::std::mem::align_of::<__graal_create_isolate_params_t>() - 8usize];
-    ["Offset of field: __graal_create_isolate_params_t::version"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, version) - 0usize];
-    ["Offset of field: __graal_create_isolate_params_t::reserved_address_space_size"][::std::mem::offset_of!(
-        __graal_create_isolate_params_t,
-        reserved_address_space_size
-    ) - 8usize];
-    ["Offset of field: __graal_create_isolate_params_t::auxiliary_image_path"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, auxiliary_image_path) - 16usize];
-    ["Offset of field: __graal_create_isolate_params_t::auxiliary_image_reserved_space_size"][::std::mem::offset_of!(
-        __graal_create_isolate_params_t,
-        auxiliary_image_reserved_space_size
-    )
-        - 24usize];
-    ["Offset of field: __graal_create_isolate_params_t::_reserved_1"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, _reserved_1) - 32usize];
-    ["Offset of field: __graal_create_isolate_params_t::_reserved_2"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, _reserved_2) - 40usize];
-    ["Offset of field: __graal_create_isolate_params_t::pkey"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, pkey) - 48usize];
-    ["Offset of field: __graal_create_isolate_params_t::_reserved_3"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, _reserved_3) - 52usize];
-    ["Offset of field: __graal_create_isolate_params_t::_reserved_4"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, _reserved_4) - 53usize];
-    ["Offset of field: __graal_create_isolate_params_t::_reserved_5"]
-        [::std::mem::offset_of!(__graal_create_isolate_params_t, _reserved_5) - 54usize];
 };
 pub type graal_create_isolate_params_t = __graal_create_isolate_params_t;
 pub struct libchoco_capi {

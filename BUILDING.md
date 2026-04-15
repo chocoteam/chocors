@@ -2,8 +2,8 @@
 
 ## Build requirements for building the DLL and C header files
 
-- Graalvm 25 jdk
-- `JAVA_HOME` environment variable pointing to GraalVM JDK
+- Install/unzip Graalvm 25 jdk
+- `GRAALVM_HOME` environment variable pointing to GraalVM JDK folder
 - Maven installed
 
 ## Build requirements to generate `binding.rs` in `choco-solver-sys package`

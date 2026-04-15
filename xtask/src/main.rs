@@ -55,6 +55,11 @@ fn main() {
                 .clang_arg("-I".to_string() + headers_dir.to_str().unwrap())
                 .wrap_unsafe_ops(true)
                 .dynamic_library_name("libchoco_capi")
+                .opaque_type("__graal_create_isolate_params_t")
+                .blocklist_type("__graal_uword")
+                .derive_debug(false)
+                .derive_default(false)
+                .derive_copy(false)
                 // Finish the builder and generate the bindings.
                 .generate()
                 // Unwrap the Result and panic on failure.
@@ -100,36 +105,26 @@ fn main() {
                     panic!("Maven not found")
                 }
             };
-            let native_image_command = match find_command(
-                &["native-image", "native-image.cmd", "native-image.exe"][..],
-            ) {
-                Some(cmd) => cmd,
-                None => {
-                    println!(
-                        "Required tool `GraalVM native-image` was not found in PATH. Please install it and ensure it is available from the command line."
-                    );
-                    panic!("GraalVM native-image not found")
-                }
-            };
-            // Build jar file
+            // Ensure GraalVM is configured
+            if std::env::var_os("GRAALVM_HOME").is_none() {
+                panic!(
+                    "Required environment variable `GRAALVM_HOME` is not set. \
+Please set it before running `build-dll`."
+                );
+            }
+            // Clean up previous builds
             execute_command(
                 &mvn_command,
                 &["clean", "package"],
                 &choco_solver_capi_source_folder,
             );
-            // Build dll using native-image
+            // Buidl native image using maven
             execute_command(
-                &native_image_command,
-                &[
-                    "--shared",
-                    "-H:Name=libchoco_capi",
-                    "-cp",
-                    "choco-solver-capi-1.0-SNAPSHOT.jar",
-                    "--no-fallback",
-                    "--link-at-build-time",
-                ],
-                choco_solver_capi_source_folder.join("target"),
+                &mvn_command,
+                &["-Pnative", "package"],
+                &choco_solver_capi_source_folder,
             );
+
             std::env::set_current_dir(&current_dir)
                 .expect("Failed to set current working directory to original directory");
         }
