@@ -35,7 +35,7 @@
 //! and relies on backend behavior.
 //! </div>
 //!
-//! Thread safety
+//! # Thread safety
 //!
 //! This library creates one separate GraalVM isolate (independent execution
 //! environment) per thread. For this reason, all main types are not `Send`/`Sync`.
@@ -165,8 +165,7 @@ impl ChocoBackend {
             let mut isolate: *mut graal_isolate_t = ptr::null_mut();
             let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
             if lib.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
-                eprintln!("graal_create_isolate error");
-                process::exit(1);
+                panic!("graal_create_isolate error");
             }
             println!("GraalVM isolate created successfully");
             ChocoBackend {

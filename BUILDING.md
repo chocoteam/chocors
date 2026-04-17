@@ -1,5 +1,12 @@
 # Build
 
+## Repository checkout
+
+```bash
+git clone https://github.com/chocoteam/chocors.git
+git submodule update --init --recursive # Initialize choco-solver-capi
+```
+
 ## Build requirements for building the DLL and C header files
 
 - Install/unzip Graalvm 25 jdk
