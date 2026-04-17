@@ -35,7 +35,7 @@
 //! and relies on backend behavior.
 //! </div>
 //!
-//! Thread safety
+//! # Thread safety
 //!
 //! This library creates one separate GraalVM isolate (independent execution
 //! environment) per thread. For this reason, all main types are not `Send`/`Sync`.
@@ -89,7 +89,10 @@ pub use variables::*;
 use choco_solver_sys::{graal_isolate_t, graal_isolatethread_t, libchoco_capi, library_filename};
 use std::{cell::Cell, path::Path, process, ptr};
 use thiserror::Error;
-
+#[cfg(target_os = "windows")]
+const CHOCO_SOLVER_LIB_NAME: &str = "libchoco_capi";
+#[cfg(not(target_os = "windows"))]
+const CHOCO_SOLVER_LIB_NAME: &str = "choco_capi";
 thread_local! {
     pub(crate) static CHOCO_BACKEND: ChocoBackend = ChocoBackend::new();
     static DLL_FOLDER: Cell<Option<String>> = Cell::new(std::env::var("CHOCO_SOLVER_DLL_FOLDER").ok());
@@ -152,18 +155,17 @@ impl ChocoBackend {
         // Initializes the GraalVM isolate for the current thread. This is required before any interaction with the Choco backend. It is safe to call this function multiple times from the same thread, as it will only initialize once.
         unsafe {
             let lib = match dll_folder {
-                Some(folder) => {
-                    libchoco_capi::new(Path::new(&folder).join(library_filename("libchoco_capi")))
-                        .expect("Failed to load Choco C API library")
-                }
-                None => libchoco_capi::new(library_filename("libchoco_capi"))
+                Some(folder) => libchoco_capi::new(
+                    Path::new(&folder).join(library_filename(CHOCO_SOLVER_LIB_NAME)),
+                )
+                .expect("Failed to load Choco C API library"),
+                None => libchoco_capi::new(library_filename(CHOCO_SOLVER_LIB_NAME))
                     .expect("Failed to load Choco C API library"),
             };
             let mut isolate: *mut graal_isolate_t = ptr::null_mut();
             let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
             if lib.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
-                eprintln!("graal_create_isolate error");
-                process::exit(1);
+                panic!("graal_create_isolate error");
             }
             println!("GraalVM isolate created successfully");
             ChocoBackend {
