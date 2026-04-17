@@ -42,6 +42,9 @@ jobs:
         run: |
           LLVM_DIR="$(llvm-config --libdir)"
           echo "LIBCLANG_PATH=$LLVM_DIR" >> "$GITHUB_ENV"
+          
+      - name: Set RUST_BACKTRACE
+        run: echo "RUST_BACKTRACE=1" >> "$GITHUB_ENV"
 
       - name: Build DLL (native shared library)
         run: cargo xtask build-dll
