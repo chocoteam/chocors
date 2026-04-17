@@ -1,5 +1,5 @@
 use crate::{
-    CHOCO_BACKEND,
+    CHOCO_BACKEND, CHOCO_LIB,
     utils::{Handle, HandleT},
     variables::{BoolVar, IntVar},
 };
@@ -27,7 +27,7 @@ impl Solution {
         // Safety:
         // Safe because Solution instances are created from valid backend handles.
         CHOCO_BACKEND.with(|backend| unsafe {
-            Some(backend.lib.Java_org_chocosolver_capi_SolutionApi_getIntVal(
+            Some(CHOCO_LIB.Java_org_chocosolver_capi_SolutionApi_getIntVal(
                 backend.thread,
                 self.get_raw_handle(),
                 int_var.get_raw_handle(),
@@ -45,7 +45,7 @@ impl Solution {
         // Safe because Solution instances are created from valid backend handles.
         unsafe {
             Some(
-                backend.lib.Java_org_chocosolver_capi_SolutionApi_getIntVal(backend.thread, self.get_raw_handle(), bool_var.get_raw_handle())
+                CHOCO_LIB.Java_org_chocosolver_capi_SolutionApi_getIntVal(backend.thread, self.get_raw_handle(), bool_var.get_raw_handle())
                     != 0,
             )
         })

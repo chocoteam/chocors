@@ -1,4 +1,4 @@
-use crate::{CHOCO_BACKEND, Model, utils::HandleT};
+use crate::{CHOCO_BACKEND, CHOCO_LIB, Model, utils::HandleT};
 
 /// Search limits used when finding solutions (e.g., node, fail, restart, backtrack).
 #[derive(Debug, Clone, Default)]
@@ -65,13 +65,11 @@ pub(super) fn make_criterion_var_array(
                 assert!(!node_limit.is_negative(), "Node limit must be non-negative");
 
                 raw_criterions.push(
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_CriterionApi_node_counter(
-                            backend.thread,
-                            model.get_raw_handle(),
-                            node_limit,
-                        ),
+                    CHOCO_LIB.Java_org_chocosolver_capi_CriterionApi_node_counter(
+                        backend.thread,
+                        model.get_raw_handle(),
+                        node_limit,
+                    ),
                 );
             };
             if let Some(fail_limit) = fail_limit {
@@ -80,13 +78,11 @@ pub(super) fn make_criterion_var_array(
                 assert!(!fail_limit.is_negative(), "Fail limit must be non-negative");
 
                 raw_criterions.push(
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_CriterionApi_fail_counter(
-                            backend.thread,
-                            model.get_raw_handle(),
-                            fail_limit,
-                        ),
+                    CHOCO_LIB.Java_org_chocosolver_capi_CriterionApi_fail_counter(
+                        backend.thread,
+                        model.get_raw_handle(),
+                        fail_limit,
+                    ),
                 );
             };
             if let Some(restart_limit) = restart_limit {
@@ -98,13 +94,11 @@ pub(super) fn make_criterion_var_array(
                 );
 
                 raw_criterions.push(
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_CriterionApi_restart_counter(
-                            backend.thread,
-                            model.get_raw_handle(),
-                            restart_limit,
-                        ),
+                    CHOCO_LIB.Java_org_chocosolver_capi_CriterionApi_restart_counter(
+                        backend.thread,
+                        model.get_raw_handle(),
+                        restart_limit,
+                    ),
                 );
             };
             if let Some(backtrack_limit) = backtrack_limit {
@@ -116,21 +110,18 @@ pub(super) fn make_criterion_var_array(
                 );
 
                 raw_criterions.push(
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_CriterionApi_backtrack_counter(
-                            backend.thread,
-                            model.get_raw_handle(),
-                            backtrack_limit,
-                        ),
+                    CHOCO_LIB.Java_org_chocosolver_capi_CriterionApi_backtrack_counter(
+                        backend.thread,
+                        model.get_raw_handle(),
+                        backtrack_limit,
+                    ),
                 );
             };
             let len_i32: i32 = raw_criterions
                 .len()
                 .try_into()
                 .expect("Criterion array length exceeds i32");
-            let criterion_array = backend
-                .lib
+            let criterion_array = CHOCO_LIB
                 .Java_org_chocosolver_capi_ArrayApi_criterion_create(backend.thread, len_i32);
             for (i, criterion) in raw_criterions.iter().enumerate() {
                 #[allow(
@@ -138,14 +129,12 @@ pub(super) fn make_criterion_var_array(
                     reason = "Length checked to fit in i32"
                 )]
                 #[allow(clippy::cast_possible_wrap, reason = "Length checked to fit in i32")]
-                backend
-                    .lib
-                    .Java_org_chocosolver_capi_ArrayApi_criterion_set(
-                        backend.thread,
-                        criterion_array,
-                        *criterion,
-                        i as i32,
-                    );
+                CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_criterion_set(
+                    backend.thread,
+                    criterion_array,
+                    *criterion,
+                    i as i32,
+                );
             }
             criterion_array
         }

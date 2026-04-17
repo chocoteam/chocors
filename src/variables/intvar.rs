@@ -1,6 +1,5 @@
 pub(crate) mod boolvar;
 use super::{Display, HandleT, Variable};
-use crate::CHOCO_BACKEND;
 use crate::constraint::{ArithmeticOperator, Constraint, EqualityOperator};
 use crate::model::Model;
 use crate::utils::{Handle, make_intvar_array};
@@ -9,6 +8,7 @@ use crate::{
     ArithmConstraint, ArrayEqualityConstraints, ConstraintArithmT, ConstraintEquality, IntOrIntVar,
     Sealed,
 };
+use crate::{CHOCO_BACKEND, CHOCO_LIB};
 pub use boolvar::*;
 
 use std::borrow::Borrow;
@@ -68,14 +68,14 @@ impl NewIntVarT for (i32, Option<&str>) {
                 Some(name) => {
                     let c_name =
                         std::ffi::CString::new(name).expect("Failed to convert name to CString");
-                    backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_si(
+                    CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_si(
                         backend.thread,
                         model.get_raw_handle(),
                         c_name.as_ptr().cast_mut(),
                         self.0,
                     )
                 }
-                None => backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_i(
+                None => CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_i(
                     backend.thread,
                     model.get_raw_handle(),
                     self.0,
@@ -100,8 +100,7 @@ impl NewIntVarT for (&[i32], Option<&str>) {
                 Some(name) => {
                     let c_name =
                         std::ffi::CString::new(name).expect("Failed to convert name to CString");
-                    backend
-                        .lib
+                    CHOCO_LIB
                         .Java_org_chocosolver_capi_IntVarApi_intVar_s_arr(
                             backend.thread,
                             model.get_raw_handle(),
@@ -109,7 +108,7 @@ impl NewIntVarT for (&[i32], Option<&str>) {
                             vals,
                         )
                 }
-                None => backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_arr(
+                None => CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_arr(
                     backend.thread,
                     model.get_raw_handle(),
                     vals,
@@ -132,7 +131,7 @@ impl NewIntVarT for (i32, i32, Option<&str>) {
                 Some(name) => {
                     let c_name =
                         std::ffi::CString::new(name).expect("Failed to convert name to CString");
-                    backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_sii(
+                    CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_sii(
                         backend.thread,
                         model.get_raw_handle(),
                         c_name.as_ptr().cast_mut(),
@@ -140,7 +139,7 @@ impl NewIntVarT for (i32, i32, Option<&str>) {
                         self.1,
                     )
                 }
-                None => backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_ii(
+                None => CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_ii(
                     backend.thread,
                     model.get_raw_handle(),
                     self.0,
@@ -164,7 +163,7 @@ impl NewIntVarT for (i32, i32, Option<&str>, bool) {
                 Some(name) => {
                     let c_name =
                         std::ffi::CString::new(name).expect("Failed to convert name to CString");
-                    backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_siib(
+                    CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_siib(
                         backend.thread,
                         model.get_raw_handle(),
                         c_name.as_ptr().cast_mut(),
@@ -173,7 +172,7 @@ impl NewIntVarT for (i32, i32, Option<&str>, bool) {
                         self.3.into(),
                     )
                 }
-                None => backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_iib(
+                None => CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_iib(
                     backend.thread,
                     model.get_raw_handle(),
                     self.0,
@@ -200,8 +199,7 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
+            CHOCO_LIB
                 .Java_org_chocosolver_capi_IntVarApi_getLB(backend.thread, self.get_raw_handle())
         })
     }
@@ -210,8 +208,7 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
+            CHOCO_LIB
                 .Java_org_chocosolver_capi_IntVarApi_getUB(backend.thread, self.get_raw_handle())
         })
     }
@@ -224,7 +221,7 @@ impl<'model> IntVar<'model> {
                 // Safe because IntVar is created from Model and therefore the backend is initialized, model handle is valid
                 // and get_intvar_value can be called only if the variable is instantiated.
                 unsafe {
-                backend.lib.Java_org_chocosolver_capi_IntVarApi_getValue(
+                CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_getValue(
                     backend.thread,
                     self.get_raw_handle(),
                 )
@@ -238,13 +235,10 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_IntVarApi_hasEnumeratedDomain(
-                    backend.thread,
-                    self.get_raw_handle(),
-                )
-                != 0
+            CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_hasEnumeratedDomain(
+                backend.thread,
+                self.get_raw_handle(),
+            ) != 0
         })
     }
 
@@ -256,12 +250,10 @@ impl<'model> IntVar<'model> {
         unsafe {
             if self.has_enumerated_domain() {
                 let value_handle = CHOCO_BACKEND.with(|backend| {
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_IntVarApi_getDomainValues(
-                            backend.thread,
-                            self.get_raw_handle(),
-                        )
+                    CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_getDomainValues(
+                        backend.thread,
+                        self.get_raw_handle(),
+                    )
                 });
                 let values = get_int_array(value_handle);
                 Some(values)
@@ -275,13 +267,11 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because view is created from IntVar handle and therefore the backend is initialized.
         let view_handle = CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ViewApi_int_offset_view(
-                    backend.thread,
-                    self.get_raw_handle(),
-                    offset,
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_offset_view(
+                backend.thread,
+                self.get_raw_handle(),
+                offset,
+            )
         });
         IntVar {
             handle: Handle::new(view_handle),
@@ -292,13 +282,11 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because view is created from IntVar handle and therefore the backend is initialized.
         let view_handle = CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ViewApi_int_scale_view(
-                    backend.thread,
-                    self.get_raw_handle(),
-                    scale,
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_scale_view(
+                backend.thread,
+                self.get_raw_handle(),
+                scale,
+            )
         });
         IntVar {
             handle: Handle::new(view_handle),
@@ -309,12 +297,10 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because view is created from IntVar handle and therefore the backend is initialized.
         let view_handle = CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ViewApi_int_minus_view(
-                    backend.thread,
-                    self.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_minus_view(
+                backend.thread,
+                self.get_raw_handle(),
+            )
         });
         IntVar {
             handle: Handle::new(view_handle),
@@ -328,7 +314,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because view is created from IntVar handle and therefore the backend is initialized.
             unsafe {
-            let view_handle = backend.lib.Java_org_chocosolver_capi_ViewApi_int_eq_view(
+            let view_handle = CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_eq_view(
                 backend.thread,
                 self.get_raw_handle(),
                 value,
@@ -343,7 +329,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because view is created from IntVar handle and therefore the backend is initialized.
             unsafe {
-            let view_handle = backend.lib.Java_org_chocosolver_capi_ViewApi_int_ge_view(
+            let view_handle = CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_ge_view(
                 backend.thread,
                 self.get_raw_handle(),
                 value,
@@ -357,7 +343,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because view is created from IntVar handle and therefore the backend is initialized.
             unsafe {
-            let view_handle =backend.lib.Java_org_chocosolver_capi_ViewApi_int_le_view(
+            let view_handle =CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_le_view(
                 backend.thread,
                 self.get_raw_handle(),
                 value,
@@ -372,7 +358,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because view is created from IntVar handle and therefore the backend is initialized.
             unsafe {
-            let view_handle =backend.lib.Java_org_chocosolver_capi_ViewApi_int_ne_view(
+            let view_handle =CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_int_ne_view(
                 backend.thread,
                 self.get_raw_handle(),
                 value,
@@ -416,8 +402,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_eq_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -425,8 +410,7 @@ impl<'model> IntVar<'model> {
                         y_var.get_raw_handle(),
                         b.get_raw_handle(),
                     ),
-                IntOrIntVar::Int(y_int) => backend
-                    .lib
+                IntOrIntVar::Int(y_int) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_eq_c(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -450,8 +434,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_ne_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -459,8 +442,7 @@ impl<'model> IntVar<'model> {
                         y_var.get_raw_handle(),
                         b.get_raw_handle(),
                     ),
-                IntOrIntVar::Int(y_int) => backend
-                    .lib
+                IntOrIntVar::Int(y_int) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_ne_c(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -484,8 +466,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_lt_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -493,8 +474,7 @@ impl<'model> IntVar<'model> {
                         y_var.get_raw_handle(),
                         b.get_raw_handle(),
                     ),
-                IntOrIntVar::Int(y_int) => backend
-                    .lib
+                IntOrIntVar::Int(y_int) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_lt_c(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -518,8 +498,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_gt_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -527,8 +506,7 @@ impl<'model> IntVar<'model> {
                         y_var.get_raw_handle(),
                         b.get_raw_handle(),
                     ),
-                IntOrIntVar::Int(y_int) => backend
-                    .lib
+                IntOrIntVar::Int(y_int) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_gt_c(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -552,8 +530,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_le_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -563,15 +540,13 @@ impl<'model> IntVar<'model> {
                     ),
                 IntOrIntVar::Int(y_int) => {
                     // For integer constants, x <= y is equivalent to x < y + 1
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_ReificationApi_reify_x_lt_c(
-                            backend.thread,
-                            self.get_model().get_raw_handle(),
-                            self.get_raw_handle(),
-                            y_int + 1,
-                            b.get_raw_handle(),
-                        )
+                    CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_lt_c(
+                        backend.thread,
+                        self.get_model().get_raw_handle(),
+                        self.get_raw_handle(),
+                        y_int + 1,
+                        b.get_raw_handle(),
+                    )
                 }
             }
         });
@@ -589,8 +564,7 @@ impl<'model> IntVar<'model> {
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
             match y_coverted {
-                IntOrIntVar::IntVar(y_var) => backend
-                    .lib
+                IntOrIntVar::IntVar(y_var) => CHOCO_LIB
                     .Java_org_chocosolver_capi_ReificationApi_reify_x_ge_y(
                         backend.thread,
                         self.get_model().get_raw_handle(),
@@ -600,15 +574,13 @@ impl<'model> IntVar<'model> {
                     ),
                 IntOrIntVar::Int(y_int) => {
                     // For integer constants, x >= y is equivalent to x > y - 1
-                    backend
-                        .lib
-                        .Java_org_chocosolver_capi_ReificationApi_reify_x_gt_c(
-                            backend.thread,
-                            self.get_model().get_raw_handle(),
-                            self.get_raw_handle(),
-                            y_int - 1,
-                            b.get_raw_handle(),
-                        )
+                    CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_gt_c(
+                        backend.thread,
+                        self.get_model().get_raw_handle(),
+                        self.get_raw_handle(),
+                        y_int - 1,
+                        b.get_raw_handle(),
+                    )
                 }
             }
         });
@@ -620,16 +592,14 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_reify_x_eq_yc(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    y.get_raw_handle(),
-                    c,
-                    b.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_eq_yc(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                y.get_raw_handle(),
+                c,
+                b.get_raw_handle(),
+            )
         });
     }
 
@@ -639,16 +609,14 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_reify_x_ne_yc(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    y.get_raw_handle(),
-                    c,
-                    b.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_ne_yc(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                y.get_raw_handle(),
+                c,
+                b.get_raw_handle(),
+            )
         });
     }
 
@@ -658,16 +626,14 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_reify_x_lt_yc(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    y.get_raw_handle(),
-                    c,
-                    b.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_lt_yc(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                y.get_raw_handle(),
+                c,
+                b.get_raw_handle(),
+            )
         });
     }
 
@@ -677,16 +643,14 @@ impl<'model> IntVar<'model> {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_reify_x_gt_yc(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    y.get_raw_handle(),
-                    c,
-                    b.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reify_x_gt_yc(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                y.get_raw_handle(),
+                c,
+                b.get_raw_handle(),
+            )
         });
     }
 
@@ -698,8 +662,7 @@ impl<'model> IntVar<'model> {
             // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_member_iv_iarray(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -716,8 +679,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_member_iv_i_i(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -736,8 +698,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_not_member_iv_iarray(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -757,8 +718,7 @@ impl<'model> IntVar<'model> {
             // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_not_member_iv_i_i(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -779,8 +739,7 @@ impl<'model> IntVar<'model> {
             // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-             let ptr = backend
-                .lib
+             let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_absolute(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -797,7 +756,7 @@ impl<'model> IntVar<'model> {
             // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr =backend.lib.Java_org_chocosolver_capi_ConstraintApi_square(
+            let ptr =CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_square(
                 backend.thread,
                 self.get_model().get_raw_handle(),
                 self.get_raw_handle(),
@@ -813,7 +772,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend.lib.Java_org_chocosolver_capi_ConstraintApi_pow(
+            let ptr = CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_pow(
                 backend.thread,
                 self.get_model().get_raw_handle(),
                 self.get_raw_handle(),
@@ -832,8 +791,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_max_iv_ivarray(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -852,8 +810,7 @@ impl<'model> IntVar<'model> {
             // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-             let ptr =backend
-                .lib
+             let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_min_iv_ivarray(
                     backend.thread,
                     self.get_model().get_raw_handle(),
@@ -877,7 +834,7 @@ impl<'model> IntVar<'model> {
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend.lib.Java_org_chocosolver_capi_ConstraintApi_among(
+            let ptr = CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_among(
                 backend.thread,
                 self.get_model().get_raw_handle(),
                 self.get_raw_handle(),
@@ -1165,8 +1122,7 @@ impl<'model> ArithmConstraint<'model, &IntVar<'model>, &IntVar<'model>> for IntV
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             // Also, the handles passed are valid IntVar handles.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_mod_iv_iv_iv(
                     backend.thread,
                     self.model.get_raw_handle(),
@@ -1189,8 +1145,7 @@ impl<'model> ArithmConstraint<'model, i32, i32> for IntVar<'model> {
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             // Also, the handles passed are valid IntVar handles.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_mod_iv_i_i(
                     backend.thread,
                     self.model.get_raw_handle(),
@@ -1213,8 +1168,7 @@ impl<'model> ArithmConstraint<'model, i32, &IntVar<'model>> for IntVar<'model> {
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             // Also, the handles passed are valid IntVar handles.
             unsafe {
-            let ptr =backend
-                .lib
+            let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_mod_iv_i_iv(
                     backend.thread,
                     self.model.get_raw_handle(),
@@ -1242,8 +1196,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         unsafe {
-              let ptr =backend
-                .lib
+              let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_allDifferent(
                     backend.thread,
                     model.get_raw_handle(),
@@ -1265,8 +1218,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr =backend
-                .lib
+            let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_allDifferentExcept0(
                     backend.thread,
                     model.get_raw_handle(),
@@ -1287,8 +1239,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_all_equal(
                     backend.thread,
                     model.get_raw_handle(),
@@ -1310,8 +1261,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_not_all_equal(
                     backend.thread,
                     model.get_raw_handle(),
@@ -1336,8 +1286,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_atLeastNValues(
                     backend.thread,
                     model.get_raw_handle(),
@@ -1364,8 +1313,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
             // Safety:
             // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let ptr = backend
-                .lib
+            let ptr = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_atMostNValues(
                     backend.thread,
                     model.get_raw_handle(),

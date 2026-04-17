@@ -134,7 +134,7 @@ Please set it before running `build-dll`."
                 .canonicalize()
                 .unwrap();
             let mut cmd = std::process::Command::new("cargo");
-            cmd.args(["test", "--", "--test-threads=1", "--nocapture"])
+            cmd.args(["test", "--", "--nocapture"])
                 .env("CHOCO_SOLVER_DLL_FOLDER", headers_dir.to_str().unwrap())
                 .env("RUST_BACKTRACE", "1");
             let status = cmd.status().expect("Failed to run cargo test");

@@ -1,4 +1,4 @@
-use crate::CHOCO_BACKEND;
+use crate::{CHOCO_BACKEND, CHOCO_LIB};
 
 use std::borrow::Borrow;
 
@@ -24,9 +24,7 @@ impl Drop for Handle {
         unsafe {
             assert!(!self.handle.is_null());
             CHOCO_BACKEND.with(|backend| {
-                backend
-                    .lib
-                    .Java_org_chocosolver_capi_HandlesApi_destroy(backend.thread, self.handle);
+                CHOCO_LIB.Java_org_chocosolver_capi_HandlesApi_destroy(backend.thread, self.handle);
                 self.handle = std::ptr::null_mut();
             });
         }
@@ -53,15 +51,14 @@ pub(crate) unsafe fn get_int_array(handle: *const std::os::raw::c_void) -> Vec<i
     // Safety:
     // Caller must ensure that the handle is valid and the backend is initialized.
     CHOCO_BACKEND.with(|backend| unsafe {
-        let length = backend
-            .lib
+        let length = CHOCO_LIB
             .Java_org_chocosolver_capi_ArrayApi_int_length(backend.thread, handle.cast_mut());
         let vec_size: usize = length
             .try_into()
             .expect("Array length exceeds usize  or is negative");
         let mut array = Vec::with_capacity(vec_size);
         for i in 0..length {
-            array.push(backend.lib.Java_org_chocosolver_capi_ArrayApi_int_get(
+            array.push(CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_int_get(
                 backend.thread,
                 handle.cast_mut(),
                 i,
@@ -81,16 +78,15 @@ pub(crate) fn make_int_array(ints: &[i32]) -> *mut std::os::raw::c_void {
             .len()
             .try_into()
             .expect("Slice length exceeds i32 limits");
-        let ints_array = backend
-            .lib
-            .Java_org_chocosolver_capi_ArrayApi_int_create(backend.thread, len_i32);
+        let ints_array =
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_int_create(backend.thread, len_i32);
         for (i, &value) in ints.iter().enumerate() {
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "Length checked to fit in i32"
             )]
             #[allow(clippy::cast_possible_wrap, reason = "Length checked to fit in i32")]
-            backend.lib.Java_org_chocosolver_capi_ArrayApi_int_set(
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_int_set(
                 backend.thread,
                 ints_array,
                 value,
@@ -111,16 +107,15 @@ pub(crate) fn make_boolvar_array<'a, 'model: 'a, Q: Borrow<crate::variables::Boo
             .len()
             .try_into()
             .expect("Slice length exceeds i32 limits");
-        let boolvar_array = backend
-            .lib
-            .Java_org_chocosolver_capi_ArrayApi_boolVar_create(backend.thread, len_i32);
+        let boolvar_array =
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_boolVar_create(backend.thread, len_i32);
         for (i, boolvar) in boolvars.iter().enumerate() {
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "Length checked to fit in i32"
             )]
             #[allow(clippy::cast_possible_wrap, reason = "Length checked to fit in i32")]
-            backend.lib.Java_org_chocosolver_capi_ArrayApi_boolVar_set(
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_boolVar_set(
                 backend.thread,
                 boolvar_array,
                 boolvar.borrow().get_raw_handle(),
@@ -146,14 +141,14 @@ pub(crate) fn make_constraint_array<
             .len()
             .try_into()
             .expect("Slice length exceeds i32 limits");
-        let constraint_array = backend.lib.Java_org_chocosolver_capi_ArrayApi_constraint_create(backend.thread, len_i32);
+        let constraint_array = CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_constraint_create(backend.thread, len_i32);
         for (i, constraint) in constraints.iter().enumerate() {
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "Length checked to fit in i32"
             )]
             #[allow(clippy::cast_possible_wrap, reason = "Length checked to fit in i32")]
-            backend.lib.Java_org_chocosolver_capi_ArrayApi_constraint_set(
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_constraint_set(
                 backend.thread,
                 constraint_array,
                 constraint.borrow().get_raw_handle(),
@@ -175,14 +170,14 @@ pub(crate) fn make_intvar_array<'a, 'model: 'a, Q: Borrow<crate::variables::IntV
             .len()
             .try_into()
             .expect("Slice length exceeds i32 limits");
-        let intvar_array = backend.lib.Java_org_chocosolver_capi_ArrayApi_intVar_create(backend.thread, len_i32);
+        let intvar_array = CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_intVar_create(backend.thread, len_i32);
         for (i, intvar) in intvars.iter().enumerate() {
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "Length checked to fit in i32"
             )]
             #[allow(clippy::cast_possible_wrap, reason = "Length checked to fit in i32")]
-            backend.lib.Java_org_chocosolver_capi_ArrayApi_intVar_set(backend.thread, intvar_array, intvar.borrow().get_raw_handle(), i as i32);
+            CHOCO_LIB.Java_org_chocosolver_capi_ArrayApi_intVar_set(backend.thread, intvar_array, intvar.borrow().get_raw_handle(), i as i32);
         }
         intvar_array
     })

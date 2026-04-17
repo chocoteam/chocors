@@ -87,15 +87,35 @@ pub use solver::*;
 pub use variables::*;
 
 use choco_solver_sys::{graal_isolate_t, graal_isolatethread_t, libchoco_capi, library_filename};
-use std::{cell::Cell, path::Path, process, ptr};
+use std::{
+    path::Path,
+    ptr,
+    sync::{LazyLock, OnceLock},
+};
 use thiserror::Error;
 #[cfg(target_os = "windows")]
 const CHOCO_SOLVER_LIB_NAME: &str = "libchoco_capi";
 #[cfg(not(target_os = "windows"))]
 const CHOCO_SOLVER_LIB_NAME: &str = "choco_capi";
+
+static DLL_FOLDER: OnceLock<Option<String>> = OnceLock::new();
+
+static CHOCO_LIB: LazyLock<libchoco_capi> = LazyLock::new(|| {
+    let dll_folder = DLL_FOLDER.get_or_init(|| std::env::var("CHOCO_SOLVER_DLL_FOLDER").ok());
+    unsafe {
+        match dll_folder {
+            Some(folder) => {
+                libchoco_capi::new(Path::new(&folder).join(library_filename(CHOCO_SOLVER_LIB_NAME)))
+                    .expect("Failed to load Choco C API library")
+            }
+            None => libchoco_capi::new(library_filename(CHOCO_SOLVER_LIB_NAME))
+                .expect("Failed to load Choco C API library"),
+        }
+    }
+});
+
 thread_local! {
     pub(crate) static CHOCO_BACKEND: ChocoBackend = ChocoBackend::new();
-    static DLL_FOLDER: Cell<Option<String>> = Cell::new(std::env::var("CHOCO_SOLVER_DLL_FOLDER").ok());
 }
 
 /// Errors that can occur during constraint solving.
@@ -145,34 +165,20 @@ pub struct ChocoBackend {
     #[allow(dead_code)]
     isolate: *mut graal_isolate_t,
     thread: *mut graal_isolatethread_t,
-    lib: libchoco_capi,
 }
 
 impl ChocoBackend {
     fn new() -> Self {
-        let dll_folder = DLL_FOLDER.take();
         // # Safety:
         // Initializes the GraalVM isolate for the current thread. This is required before any interaction with the Choco backend. It is safe to call this function multiple times from the same thread, as it will only initialize once.
         unsafe {
-            let lib = match dll_folder {
-                Some(folder) => libchoco_capi::new(
-                    Path::new(&folder).join(library_filename(CHOCO_SOLVER_LIB_NAME)),
-                )
-                .expect("Failed to load Choco C API library"),
-                None => libchoco_capi::new(library_filename(CHOCO_SOLVER_LIB_NAME))
-                    .expect("Failed to load Choco C API library"),
-            };
             let mut isolate: *mut graal_isolate_t = ptr::null_mut();
             let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
-            if lib.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
+            if CHOCO_LIB.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
                 panic!("graal_create_isolate error");
             }
 
-            ChocoBackend {
-                lib,
-                isolate,
-                thread,
-            }
+            ChocoBackend { isolate, thread }
         }
     }
     /// Sets the folder path where the DLL files are located.
@@ -193,8 +199,18 @@ impl ChocoBackend {
     /// as it configures the directory from which the `libchoco_capi` library will be loaded.
     /// If not set, the library will be searched in folder specified by environment variable `CHOCO_SOLVER_DLL_FOLDER`.
     /// If the environment variable is not set, the library will be searched in the default system paths.
-    pub fn set_dll_folder(dll_folder_path: String) {
-        DLL_FOLDER.set(Some(dll_folder_path));
+    pub fn set_dll_folder(dll_folder_path: String) -> Result<(), Option<String>> {
+        DLL_FOLDER.set(Some(dll_folder_path))
+    }
+}
+
+impl Drop for ChocoBackend {
+    fn drop(&mut self) {
+        // # Safety:
+        // Cleans up the GraalVM isolate for the current thread. This should be called when the thread is exiting to free resources associated with the isolate. It is safe to call this function multiple times, as it will only clean up if the isolate was initialized.
+        unsafe {
+            CHOCO_LIB.graal_tear_down_isolate(self.thread);
+        }
     }
 }
 
