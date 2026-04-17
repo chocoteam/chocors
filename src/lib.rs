@@ -167,7 +167,7 @@ impl ChocoBackend {
             if lib.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
                 panic!("graal_create_isolate error");
             }
-            println!("GraalVM isolate created successfully");
+
             ChocoBackend {
                 lib,
                 isolate,
