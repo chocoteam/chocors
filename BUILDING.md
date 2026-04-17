@@ -22,5 +22,4 @@ git submodule update --init --recursive # Initialize choco-solver-capi
 - Run `cargo xtask build-dll` for building the DLL and generating header files
   - `libchoco_capi.dll` is located in `choco-solver-sys/target`
 - Run `cargo xtask generate-bindings` to re-generate the `bindings.rs` in `choco-solver-sys`
--
-- execute usual `cargo` command to build and test
+- Run `cargo xtask test-all` to execute all tests
