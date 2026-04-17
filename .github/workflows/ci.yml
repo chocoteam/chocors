@@ -40,7 +40,7 @@ jobs:
 
       - name: Set LIBCLANG_PATH
         run: |
-          LLVM_DIR="$(llvm-config --bindir)"
+          LLVM_DIR="$(llvm-config --libdir)"
           echo "LIBCLANG_PATH=$LLVM_DIR" >> "$GITHUB_ENV"
 
       - name: Build DLL (native shared library)
