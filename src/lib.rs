@@ -90,7 +90,7 @@ use choco_solver_sys::{graal_isolate_t, graal_isolatethread_t, libchoco_capi, li
 use std::{
     path::Path,
     ptr,
-    sync::{LazyLock, OnceLock},
+    sync::{LazyLock, Mutex, OnceLock},
 };
 use thiserror::Error;
 #[cfg(target_os = "windows")]
@@ -98,6 +98,8 @@ const CHOCO_SOLVER_LIB_NAME: &str = "libchoco_capi";
 #[cfg(not(target_os = "windows"))]
 const CHOCO_SOLVER_LIB_NAME: &str = "choco_capi";
 
+/// Global variable to store the DLL folder path, if set. This is used to configure the directory from which the `libchoco_capi` library will be loaded.
+/// It is initialized lazily when the library is first accessed, and can be set using `ChocoBackend::set_dll_folder`.
 static DLL_FOLDER: OnceLock<Option<String>> = OnceLock::new();
 
 static CHOCO_LIB: LazyLock<libchoco_capi> = LazyLock::new(|| {
@@ -113,6 +115,8 @@ static CHOCO_LIB: LazyLock<libchoco_capi> = LazyLock::new(|| {
         }
     }
 });
+
+static CHOCO_CREATE_ISOLATE_LOCK: Mutex<()> = Mutex::new(());
 
 thread_local! {
     pub(crate) static CHOCO_BACKEND: ChocoBackend = ChocoBackend::new();
@@ -174,9 +178,13 @@ impl ChocoBackend {
         unsafe {
             let mut isolate: *mut graal_isolate_t = ptr::null_mut();
             let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
+            let lock = CHOCO_CREATE_ISOLATE_LOCK
+                .lock()
+                .expect("Failed to acquire lock for creating GraalVM isolate");
             if CHOCO_LIB.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
                 panic!("graal_create_isolate error");
             }
+            drop(lock);
 
             ChocoBackend { isolate, thread }
         }
@@ -209,7 +217,11 @@ impl Drop for ChocoBackend {
         // # Safety:
         // Cleans up the GraalVM isolate for the current thread. This should be called when the thread is exiting to free resources associated with the isolate. It is safe to call this function multiple times, as it will only clean up if the isolate was initialized.
         unsafe {
+            let lock = CHOCO_CREATE_ISOLATE_LOCK
+                .lock()
+                .expect("Failed to acquire lock for destroying GraalVM isolate");
             CHOCO_LIB.graal_tear_down_isolate(self.thread);
+            drop(lock);
         }
     }
 }
