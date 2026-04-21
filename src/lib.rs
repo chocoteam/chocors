@@ -38,7 +38,10 @@
 //! # Thread safety
 //!
 //! This library creates one separate GraalVM isolate (independent execution
-//! environment) per thread. For this reason, all main types are not `Send`/`Sync`.
+//! environment) per process.
+//! Currently the all types are not Send and Sync until it is clarified the thread safety of Choco Solver API and GraalVM native C API.
+//! However, it is possible to create and use models from multiple threads as long as they are not shared across threads (i.e., each thread creates and uses its own models and variables).
+//! The library ensures that the GraalVM isolate is initialized and attached to each thread that interacts with the Choco backend, allowing for concurrent usage from multiple threads without sharing state between them.
 //!
 //!
 //! # Example
@@ -116,11 +119,46 @@ static CHOCO_LIB: LazyLock<libchoco_capi> = LazyLock::new(|| {
     }
 });
 
-static CHOCO_CREATE_ISOLATE_LOCK: Mutex<()> = Mutex::new(());
+#[repr(transparent)]
+struct IsolatePtr(Option<*mut graal_isolate_t>);
+
+/// # Safety
+/// This type is send because it only contains a pointer to a GraalVM isolate, which can be safely sent across threads as long as the GraalVM API is used correctly (i.e., attaching/detaching threads properly).
+/// The actual thread management and isolate usage are handled in the `ChocoBackend` struct, which ensures that threads are attached/detached correctly when interacting with the GraalVM environment.
+unsafe impl Send for IsolatePtr {}
+static ISOLATE_PTR: Mutex<IsolatePtr> = Mutex::new(IsolatePtr(None));
 
 thread_local! {
-    pub(crate) static CHOCO_BACKEND: ChocoBackend = ChocoBackend::new();
-}
+    pub(crate) static CHOCO_BACKEND: ChocoBackend = {
+        // # Safety:
+        // Initializes the GraalVM isolate if not yet done.
+        // This is required before any interaction with the Choco backend.
+        // It is safe to call this function multiple times from the same thread, as it will only initialize once.
+        unsafe {
+            let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
+
+            let mut lock = ISOLATE_PTR
+                .lock()
+                .expect("Failed to acquire lock for creating GraalVM isolate");
+            match lock.0 {
+                None => {
+                    let mut isolate: *mut graal_isolate_t = ptr::null_mut();
+                    if CHOCO_LIB.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread)
+                        != 0
+                    {
+                        panic!("graal_create_isolate error");
+                    }
+                    lock.0 = Some(isolate);
+                }
+
+                Some(isolate_ptr) => {
+                    if CHOCO_LIB.graal_attach_thread(isolate_ptr, &mut thread) != 0 {
+                        panic!("graal_create_isolate error");
+                    }
+                }
+            }
+            ChocoBackend { thread }
+}}}
 
 /// Errors that can occur during constraint solving.
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -128,7 +166,7 @@ thread_local! {
 pub enum SolverError {
     #[error("Tried to post a not free constraint or reified constraint")]
     NotFreeConstraint,
-    #[error("Found contraddiction while propagating")]
+    #[error("Found contradiction while propagating")]
     FoundContradiction,
     #[error("Cannot be converted to BoolVar: domain is not [0,1]")]
     BoolVarConversionError,
@@ -166,29 +204,10 @@ impl<Q: Sealed> Sealed for &[Q] {}
 
 // :TODO: Unsafe code isolate in backend need to be sincronized
 pub struct ChocoBackend {
-    #[allow(dead_code)]
-    isolate: *mut graal_isolate_t,
     thread: *mut graal_isolatethread_t,
 }
 
 impl ChocoBackend {
-    fn new() -> Self {
-        // # Safety:
-        // Initializes the GraalVM isolate for the current thread. This is required before any interaction with the Choco backend. It is safe to call this function multiple times from the same thread, as it will only initialize once.
-        unsafe {
-            let mut isolate: *mut graal_isolate_t = ptr::null_mut();
-            let mut thread: *mut graal_isolatethread_t = ptr::null_mut();
-            let lock = CHOCO_CREATE_ISOLATE_LOCK
-                .lock()
-                .expect("Failed to acquire lock for creating GraalVM isolate");
-            if CHOCO_LIB.graal_create_isolate(ptr::null_mut(), &mut isolate, &mut thread) != 0 {
-                panic!("graal_create_isolate error");
-            }
-            drop(lock);
-
-            ChocoBackend { isolate, thread }
-        }
-    }
     /// Sets the folder path where the DLL files are located.
     /// # Arguments
     ///
@@ -215,13 +234,10 @@ impl ChocoBackend {
 impl Drop for ChocoBackend {
     fn drop(&mut self) {
         // # Safety:
-        // Cleans up the GraalVM isolate for the current thread. This should be called when the thread is exiting to free resources associated with the isolate. It is safe to call this function multiple times, as it will only clean up if the isolate was initialized.
+        // Detach the thread from the GraalVM isolate when the backend is dropped. This is necessary to clean up resources associated with the thread in the GraalVM environment.
+        //It is safe to call this function as part of the drop process, as it will only detach the thread if it was successfully attached during initialization.
         unsafe {
-            let lock = CHOCO_CREATE_ISOLATE_LOCK
-                .lock()
-                .expect("Failed to acquire lock for destroying GraalVM isolate");
-            CHOCO_LIB.graal_tear_down_isolate(self.thread);
-            drop(lock);
+            CHOCO_LIB.graal_detach_thread(self.thread);
         }
     }
 }
