@@ -1,7 +1,7 @@
 #![allow(clippy::indexing_slicing)]
 mod criterion;
 use crate::{
-    CHOCO_BACKEND, Model, Solution, SolverError,
+    CHOCO_BACKEND, CHOCO_LIB, Model, Solution, SolverError,
     utils::{Handle, HandleT, ModelObject},
 };
 
@@ -21,7 +21,7 @@ impl<'model> Solver<'model> {
         // create solver function are guarantee to be called after chocosolver_init
         // because Model can be created only after that by the ChocoBackend lazy initialization.
         unsafe {
-            let handle = backend.lib.Java_org_chocosolver_capi_ModelApi_getSolver(backend.thread, model.get_raw_handle());
+            let handle = CHOCO_LIB.Java_org_chocosolver_capi_ModelApi_getSolver(backend.thread, model.get_raw_handle());
             assert!(
                 !handle.is_null(),
                 "Failed to create solver: received null handle"
@@ -47,7 +47,7 @@ impl<'model> Solver<'model> {
         // Safety:
         // Safe because Solver instances are created from valid backend handles.
         unsafe {
-            backend.lib.Java_org_chocosolver_capi_SolverApi_limit_time_ms(backend.thread, self.get_raw_handle(), time_limit_ms);
+            CHOCO_LIB.Java_org_chocosolver_capi_SolverApi_limit_time_ms(backend.thread, self.get_raw_handle(), time_limit_ms);
         })
     }
 
@@ -59,7 +59,7 @@ impl<'model> Solver<'model> {
         unsafe {
             let criterion_array = criterion::make_criterion_var_array(criterions, self.model);
             let solution_handle =
-                backend.lib.Java_org_chocosolver_capi_SolverApi_find_solution(backend.thread, self.get_raw_handle(), criterion_array);
+                CHOCO_LIB.Java_org_chocosolver_capi_SolverApi_find_solution(backend.thread, self.get_raw_handle(), criterion_array);
             if solution_handle.is_null() {
                 None
             } else {
@@ -78,7 +78,7 @@ impl<'model> Solver<'model> {
         // Safety:
         // Safe because Solver instances are created from valid backend handles.
         unsafe {
-            if backend.lib.Java_org_chocosolver_capi_SolverApi_propagate(backend.thread, self.get_raw_handle()) != 0 {
+            if CHOCO_LIB.Java_org_chocosolver_capi_SolverApi_propagate(backend.thread, self.get_raw_handle()) != 0 {
                 Ok(())
             } else {
                 Err(SolverError::FoundContradiction)

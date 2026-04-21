@@ -1,6 +1,6 @@
 use crate::utils::{Handle, HandleT};
 use crate::variables::{IntVar, NewIntVarT};
-use crate::{BoolVar, CHOCO_BACKEND};
+use crate::{BoolVar, CHOCO_BACKEND, CHOCO_LIB};
 
 /// A constraint programming model that owns variables and constraints.
 ///
@@ -26,12 +26,10 @@ impl Model {
                     let c_name =
                         std::ffi::CString::new(n).expect("Failed to convert name to CString");
                     let model_handle = CHOCO_BACKEND.with(|backend| {
-                        backend
-                            .lib
-                            .Java_org_chocosolver_capi_ModelApi_createModel_s(
-                                backend.thread,
-                                c_name.as_ptr().cast_mut(),
-                            )
+                        CHOCO_LIB.Java_org_chocosolver_capi_ModelApi_createModel_s(
+                            backend.thread,
+                            c_name.as_ptr().cast_mut(),
+                        )
                     });
 
                     assert!(
@@ -43,9 +41,7 @@ impl Model {
                 }
                 None => {
                     let model_handle = CHOCO_BACKEND.with(|backend| {
-                        backend
-                            .lib
-                            .Java_org_chocosolver_capi_ModelApi_createModel(backend.thread)
+                        CHOCO_LIB.Java_org_chocosolver_capi_ModelApi_createModel(backend.thread)
                     });
                     assert!(
                         !model_handle.is_null(),
@@ -67,7 +63,7 @@ impl Model {
         // Safe because this can be called only after the model is created and therefore the backend is initialized.
         unsafe {
             let name_ptr = CHOCO_BACKEND.with(|backend| {
-                backend.lib.Java_org_chocosolver_capi_ModelApi_getName(
+                CHOCO_LIB.Java_org_chocosolver_capi_ModelApi_getName(
                     backend.thread,
                     self.handle.get_raw_handle(),
                 )

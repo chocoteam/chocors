@@ -140,7 +140,6 @@ fn test_arithm_iv_op_iv_op_iv_with_intvar_generic() {
 
 #[test]
 fn test_arithm_iv_op_cst_op_iv() {
-    println!("PATH: {:?}", std::env::var("PATH"));
     let model = Model::new(Some("TestArithmIvOpCstOpIv"));
     let var1 = IntVar::new(&model, (1, 5, Some("var1")));
     let var2 = IntVar::new(&model, (5, 20, Some("var2")));

@@ -4,6 +4,7 @@ use std::ops::BitOr;
 use std::ops::Not;
 
 use super::{Handle, HandleT};
+use crate::CHOCO_LIB;
 use crate::Sealed;
 use crate::SolverError;
 
@@ -82,13 +83,13 @@ impl<'model> BoolVar<'model> {
                     let c_name = std::ffi::CString::new(name_str)
                         .expect("Failed to convert name to CString");
                     match value {
-                        Some(x) => backend.lib.Java_org_chocosolver_capi_BoolVarApi_boolVar_sb(
+                        Some(x) => CHOCO_LIB.Java_org_chocosolver_capi_BoolVarApi_boolVar_sb(
                             backend.thread,
                             model.get_raw_handle(),
                             c_name.as_ptr().cast_mut(),
                             i32::from(x),
                         ),
-                        None => backend.lib.Java_org_chocosolver_capi_BoolVarApi_boolVar_s(
+                        None => CHOCO_LIB.Java_org_chocosolver_capi_BoolVarApi_boolVar_s(
                             backend.thread,
                             model.get_raw_handle(),
                             c_name.as_ptr().cast_mut(),
@@ -96,12 +97,12 @@ impl<'model> BoolVar<'model> {
                     }
                 }
                 None => match value {
-                    Some(x) => backend.lib.Java_org_chocosolver_capi_BoolVarApi_boolVar_b(
+                    Some(x) => CHOCO_LIB.Java_org_chocosolver_capi_BoolVarApi_boolVar_b(
                         backend.thread,
                         model.get_raw_handle(),
                         i32::from(x),
                     ),
-                    None => backend.lib.Java_org_chocosolver_capi_BoolVarApi_boolVar(
+                    None => CHOCO_LIB.Java_org_chocosolver_capi_BoolVarApi_boolVar(
                         backend.thread,
                         model.get_raw_handle(),
                     ),
@@ -126,7 +127,7 @@ impl<'model> BoolVar<'model> {
         // Safety:
         // Safe because view is created from BoolVar handle and therefore the backend is initialized.
         let view_handle = CHOCO_BACKEND.with(|backend| unsafe {
-            backend.lib.Java_org_chocosolver_capi_ViewApi_bool_not_view(
+            CHOCO_LIB.Java_org_chocosolver_capi_ViewApi_bool_not_view(
                 backend.thread,
                 bool_var.get_raw_handle(),
             )
@@ -172,15 +173,13 @@ impl<'model> BoolVar<'model> {
         // Safety:
         // Safe because BoolVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_if_then_else_bool(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    then_constraint.get_raw_handle(),
-                    else_constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_if_then_else_bool(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                then_constraint.get_raw_handle(),
+                else_constraint.get_raw_handle(),
+            )
         });
     }
 
@@ -189,14 +188,12 @@ impl<'model> BoolVar<'model> {
         // Safety:
         // Safe because BoolVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_if_then_bool(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    then_constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_if_then_bool(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                then_constraint.get_raw_handle(),
+            )
         });
     }
 
@@ -206,14 +203,12 @@ impl<'model> BoolVar<'model> {
         // Safety:
         // Safe because BoolVar is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_reification(
-                    backend.thread,
-                    self.get_model().get_raw_handle(),
-                    self.get_raw_handle(),
-                    constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_reification(
+                backend.thread,
+                self.get_model().get_raw_handle(),
+                self.get_raw_handle(),
+                constraint.get_raw_handle(),
+            )
         });
     }
 }
@@ -311,8 +306,7 @@ impl<'model, Q: Borrow<BoolVar<'model>> + Sealed> BoolVarArrayLogicOps<'model> f
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_and_bv_bv(
                     backend.thread,
                     model.get_raw_handle(),
@@ -335,8 +329,7 @@ impl<'model, Q: Borrow<BoolVar<'model>> + Sealed> BoolVarArrayLogicOps<'model> f
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_or_bv_bv(
                     backend.thread,
                     model.get_raw_handle(),

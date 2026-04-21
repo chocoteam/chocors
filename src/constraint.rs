@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::ffi::CStr;
 
 use crate::CHOCO_BACKEND;
+use crate::CHOCO_LIB;
 use crate::Sealed;
 use crate::SolverError;
 use crate::model::Model;
@@ -145,7 +146,7 @@ impl<'model> Constraint<'model> {
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             CHOCO_BACKEND.with(|backend| unsafe {
-                backend.lib.Java_org_chocosolver_capi_ConstraintApi_post(
+                CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_post(
                     backend.thread,
                     self.get_raw_handle(),
                 )
@@ -170,7 +171,7 @@ impl<'model> Constraint<'model> {
             // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-           let var_handle = backend.lib.Java_org_chocosolver_capi_ConstraintApi_reify(
+           let var_handle = CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_reify(
                 backend.thread,
                 self.get_raw_handle(),
             );
@@ -188,13 +189,11 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ConstraintApi_reify_with(
-                    backend.thread,
-                    self.get_raw_handle(),
-                    boolvar.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_reify_with(
+                backend.thread,
+                self.get_raw_handle(),
+                boolvar.get_raw_handle(),
+            )
         });
     }
 
@@ -208,7 +207,7 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend.lib.Java_org_chocosolver_capi_ConstraintApi_implies(
+            CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_implies(
                 backend.thread,
                 self.get_raw_handle(),
                 boolvar.get_raw_handle(),
@@ -227,13 +226,11 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ConstraintApi_implied_by(
-                    backend.thread,
-                    self.get_raw_handle(),
-                    boolvar.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_implied_by(
+                backend.thread,
+                self.get_raw_handle(),
+                boolvar.get_raw_handle(),
+            )
         });
     }
 
@@ -256,12 +253,10 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         let state = CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ConstraintApi_is_satisfied(
-                    backend.thread,
-                    self.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_is_satisfied(
+                backend.thread,
+                self.get_raw_handle(),
+            )
         });
         match state {
             0 => ESat::False,
@@ -275,12 +270,10 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         let status_code = CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ConstraintApi_getStatus(
-                    backend.thread,
-                    self.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ConstraintApi_getStatus(
+                backend.thread,
+                self.get_raw_handle(),
+            )
         });
         match ConstraintStatus::try_from(status_code) {
             Ok(status) => status,
@@ -297,15 +290,13 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_if_then_else(
-                    backend.thread,
-                    self.model.get_raw_handle(),
-                    self.get_raw_handle(),
-                    then_constraint.get_raw_handle(),
-                    else_constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_if_then_else(
+                backend.thread,
+                self.model.get_raw_handle(),
+                self.get_raw_handle(),
+                then_constraint.get_raw_handle(),
+                else_constraint.get_raw_handle(),
+            )
         });
     }
     /// Creates an if-then constraint: self constraint -> then_constraint.
@@ -313,14 +304,12 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_if_then(
-                    backend.thread,
-                    self.model.get_raw_handle(),
-                    self.get_raw_handle(),
-                    then_constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_if_then(
+                backend.thread,
+                self.model.get_raw_handle(),
+                self.get_raw_handle(),
+                then_constraint.get_raw_handle(),
+            )
         });
     }
 
@@ -330,14 +319,12 @@ impl<'model> Constraint<'model> {
         // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend
-                .lib
-                .Java_org_chocosolver_capi_ReificationApi_if_only_if(
-                    backend.thread,
-                    self.model.get_raw_handle(),
-                    self.get_raw_handle(),
-                    constraint.get_raw_handle(),
-                )
+            CHOCO_LIB.Java_org_chocosolver_capi_ReificationApi_if_only_if(
+                backend.thread,
+                self.model.get_raw_handle(),
+                self.get_raw_handle(),
+                constraint.get_raw_handle(),
+            )
         });
     }
 }
@@ -363,7 +350,7 @@ unsafe impl IntoRawIntVarHandleT for i32 {
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized, model handle is valid.
         CHOCO_BACKEND.with(|backend| unsafe {
-            backend.lib.Java_org_chocosolver_capi_IntVarApi_intVar_i(
+            CHOCO_LIB.Java_org_chocosolver_capi_IntVarApi_intVar_i(
                 backend.thread,
                 model.get_raw_handle(),
                 self,
@@ -383,8 +370,7 @@ impl<'model, X: Borrow<IntVar<'model>>> ConstraintArithmT<'model> for (X, Equali
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_cst(
                     backend.thread,
                     int_var.get_model().get_raw_handle(),
@@ -410,8 +396,7 @@ impl<'model, X: Borrow<IntVar<'model>>, Y: Borrow<IntVar<'model>>> ConstraintAri
 // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_iv(
                     backend.thread,
                     x_var.get_model().get_raw_handle(),
@@ -442,8 +427,7 @@ impl<'model, X: Borrow<IntVar<'model>>, Y: IntoRawIntVarHandleT> ConstraintArith
 // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_iv_iv(
                     backend.thread,
                     x_var.get_model().get_raw_handle(),
@@ -471,8 +455,7 @@ impl<'model, X: Borrow<IntVar<'model>>, Y: IntoRawIntVarHandleT> ConstraintArith
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_iv_cst(
                     backend.thread,
                     x_var.get_model().get_raw_handle(),
@@ -505,8 +488,7 @@ impl<'model, X: Borrow<IntVar<'model>>, Y: IntoRawIntVarHandleT> ConstraintArith
             // Safety:
         // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
              unsafe {
-            let constraint_handle =backend
-                .lib
+            let constraint_handle =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_iv_iv(
                     backend.thread,
                     x_var.get_model().get_raw_handle(),
@@ -534,8 +516,7 @@ impl<'model, X: Borrow<IntVar<'model>>, Y: IntoRawIntVarHandleT> ConstraintArith
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-             let constraint_handle = backend
-                .lib
+             let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_arithm_iv_iv_cst(
                     backend.thread,
                     x_var.get_model().get_raw_handle(),
@@ -585,8 +566,7 @@ impl<'model, Q: Borrow<Constraint<'model>> + Sealed> ConstraintArrayLogicOps<'mo
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle =backend
-                .lib
+            let constraint_handle =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_and_cs_cs(
                     backend.thread,
                     model.get_raw_handle(),
@@ -610,8 +590,7 @@ impl<'model, Q: Borrow<Constraint<'model>> + Sealed> ConstraintArrayLogicOps<'mo
             // Safety:
             // Safe because Constraint is created from Model and therefore the backend is initialized and model handle is valid.
             unsafe {
-            let constraint_handle = backend
-                .lib
+            let constraint_handle = CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_or_cs_cs(
                     backend.thread,
                     model.get_raw_handle(),
