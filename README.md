@@ -7,10 +7,14 @@ The API are similar to python wrapper [pychoco](https://github.com/chocoteam/pyc
 - Prefer compile time check instead of runtime check --> avoid as much possible panics.
 - No support for set variables
 
-> [!Warning] Don't mix variables from different model
+> [!WARNING]
+>**Don't mix variables from different model**
+> 
 > Presently Rust wrapper doesn't protect from mixing variables from different model in same constraints. Wrapper relays on Java implementation.
 
-> [!Note] Thread Safety
+> [!NOTE]
+> **Thread Safety**
+> 
 > This library create one GraalVM isolate (independent execution environment) for each process.
 > Currently the all types are not Send and Sync until it is clarified the thread safety of Choco Solver API and GraalVM native C API
 
