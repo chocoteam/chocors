@@ -91,6 +91,7 @@ pub use variables::*;
 
 use choco_solver_sys::{graal_isolate_t, graal_isolatethread_t, libchoco_capi, library_filename};
 use std::{
+    ffi::CStr,
     path::Path,
     ptr,
     sync::{LazyLock, Mutex, OnceLock},
@@ -242,6 +243,26 @@ impl Drop for ChocoBackend {
     }
 }
 
+#[non_exhaustive]
+pub enum AllDifferentConsistency {
+    Default,
+    ArcConsistency,
+    BoundConsistency,
+    FullConsistency,
+}
+
+impl AllDifferentConsistency {
+    /// Used to convert to the string expected by Java API
+    pub(crate) fn to_string_java_api(&self) -> &CStr {
+        match self {
+            AllDifferentConsistency::Default => c"DEFAULT",
+            AllDifferentConsistency::ArcConsistency => c"AC",
+            AllDifferentConsistency::BoundConsistency => c"BC",
+            AllDifferentConsistency::FullConsistency => c"FC",
+        }
+    }
+}
+
 #[allow(private_bounds)]
 /// Trait for creating global constraints over arrays of variables.
 ///
@@ -252,7 +273,7 @@ pub trait ArrayEqualityConstraints<'model>: Sealed {
     /// if slice is empty
     /// # Panic:
     /// if slice is empty
-    fn all_different(self) -> Constraint<'model>;
+    fn all_different(self, consistency: AllDifferentConsistency) -> Constraint<'model>;
     ///  Creates an allDifferent constraint for variables that are not equal to 0.
     ///  There can be multiple variables equal to 0.
     /// # Panic:
