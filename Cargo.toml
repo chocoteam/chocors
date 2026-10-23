@@ -19,7 +19,7 @@ exclude = [".gitmodules"]
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 thiserror = "2.0.18"
-choco-solver-sys = { version = "0.1.0", path = "./choco-solver-sys" }
+choco-solver-sys = { version = "0.2.0", path = "./choco-solver-sys" }
 
 [dev-dependencies]
 trybuild = "1"

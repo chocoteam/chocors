@@ -105,13 +105,26 @@ fn main() {
                 "Failed to set current working directory to choco_solver_capi_source_folder",
             );
 
-            let mvn_command = match find_command(&["mvn", "mvn.cmd", "mvn.exe"][..]) {
+            let mvn_command = match find_command(&["mvn", "mvn.cmd", "mvn.exe"]) {
                 Some(cmd) => cmd,
                 None => {
                     println!(
                         "Required tool `Maven` was not found in PATH. Please install it and ensure it is available from the command line."
                     );
                     panic!("Maven not found")
+                }
+            };
+            let native_image_command = match find_command(&[
+                "native-image",
+                "native-image.cmd",
+                "native-image.exe",
+            ]) {
+                Some(cmd) => cmd,
+                None => {
+                    println!(
+                        "Required tool `native-image` was not found in PATH. Please install GraalVM and ensure it is available from the command line."
+                    );
+                    panic!("native-image not found")
                 }
             };
             // Ensure GraalVM is configured
@@ -129,9 +142,16 @@ Please set it before running `build-dll`."
             );
             // Buidl native image using maven
             execute_command(
-                &mvn_command,
-                &["-Pnative", "package"],
-                &choco_solver_capi_source_folder,
+                &native_image_command,
+                &[
+                    "--shared",
+                    "-H:Name=libchoco_capi",
+                    "-cp",
+                    "choco-solver-capi.jar",
+                    "--no-fallback",
+                    "--link-at-build-time",
+                ],
+                choco_solver_capi_source_folder.join("target"),
             );
 
             std::env::set_current_dir(&current_dir)
