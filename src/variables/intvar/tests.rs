@@ -784,7 +784,10 @@ fn test_all_different() {
     let x3 = model.int_var_bounded(1, 5, Some("x3"), None);
 
     // Post all_different constraint on the slice
-    (&[&x1, &x2, &x3][..]).all_different().post().unwrap();
+    (&[&x1, &x2, &x3][..])
+        .all_different(AllDifferentConsistency::Default)
+        .post()
+        .unwrap();
 
     let solver = model.solver();
     let solution = solver

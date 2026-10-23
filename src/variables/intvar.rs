@@ -5,8 +5,8 @@ use crate::model::Model;
 use crate::utils::{Handle, make_intvar_array};
 use crate::utils::{ModelObject, get_int_array, make_int_array};
 use crate::{
-    ArithmConstraint, ArrayEqualityConstraints, ConstraintArithmT, ConstraintEquality, IntOrIntVar,
-    Sealed,
+    AllDifferentConsistency, ArithmConstraint, ArrayEqualityConstraints, ConstraintArithmT,
+    ConstraintEquality, IntOrIntVar, Sealed,
 };
 use crate::{CHOCO_BACKEND, CHOCO_LIB};
 pub use boolvar::*;
@@ -1187,7 +1187,7 @@ impl<'model> ArithmConstraint<'model, i32, &IntVar<'model>> for IntVar<'model> {
 
 impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model> for &[Q] {
     /// Creates an all different constraint over a slice of integer variables.
-    fn all_different(self) -> Constraint<'model> {
+    fn all_different(self, consistency: AllDifferentConsistency) -> Constraint<'model> {
         assert!(!self.is_empty(), "intvars slice cannot be empty");
 
         let model = self.first().unwrap().borrow().get_model();
@@ -1195,12 +1195,15 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
         CHOCO_BACKEND.with(|backend|
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
+        //  I assume that Java_org_chocosolver_capi_ConstraintApi_allDifferent  will not change the arc consistency string passed to it.
+        // It is just wrong declaration in choco-solver-capi
         unsafe {
               let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_allDifferent(
                     backend.thread,
                     model.get_raw_handle(),
                     vals,
+                    consistency.to_string_java_api().as_ptr().cast_mut(),
                 );
                 debug_assert!(
             !ptr.is_null(),
