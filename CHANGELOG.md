@@ -8,7 +8,7 @@
 
 ### Added
 
-- Regenerated FFI bindings for the Choco Solver C API 2.0.2, including callback types and APIs for custom constraints and search.
+- Regenerated FFI bindings for the Choco Solver C API 2.0.2 (Choco6), including callback types and APIs for custom constraints and search.
 
 ### Build
 

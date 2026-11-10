@@ -1,6 +1,6 @@
 # Chocors
 
-This is wrapper of Choco5 solver.
+This is wrapper of Choco6 solver.
 The API are similar to python wrapper [pychoco](https://github.com/chocoteam/pychoco) but with some differences:
 
 - Idiomatic Rust as much as possible
