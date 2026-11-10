@@ -31,6 +31,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Compatibility
+
+Compatibility is based on the C API version used to generate the Rust bindings.
+
+| `choco-solver-sys` | `choco-solver-capi` C API |
+| ------------------ | ------------------------- |
+| `0.1.0`            | `1.0.0`                   |
+| `0.2.0`            | `2.0.2`                   |
+
 ## License
 
 Dual licensed under `MIT` and `BSD-3-Clause` (see `LICENSE.txt`).
