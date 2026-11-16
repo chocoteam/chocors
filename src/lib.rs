@@ -244,7 +244,9 @@ impl Drop for ChocoBackend {
 }
 
 #[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AllDifferentConsistency {
+    #[default]
     Default,
     ArcConsistency,
     BoundConsistency,

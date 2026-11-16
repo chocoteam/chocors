@@ -1196,7 +1196,7 @@ impl<'model, Q: Borrow<IntVar<'model>> + Sealed> ArrayEqualityConstraints<'model
         // Safety:
         // Safe because IntVar is created from Model and therefore the backend is initialized and model handle is valid.
         //  I assume that Java_org_chocosolver_capi_ConstraintApi_allDifferent  will not change the arc consistency string passed to it.
-        // It is just wrong declaration in choco-solver-capi
+        // `algo` parameter is declared `char*`` by the C API but is only read by CTypeConversion.toJavaString; the pointer comes from a static CStr and is never written to.
         unsafe {
               let ptr =CHOCO_LIB
                 .Java_org_chocosolver_capi_ConstraintApi_allDifferent(
