@@ -132,7 +132,10 @@ mod tests {
         let vec_vars: Vec<_> = (0..=99)
             .map(|_| model.int_var_bounded(0, 100, None, None))
             .collect();
-        vec_vars.all_different().post().unwrap();
+        vec_vars
+            .all_different(AllDifferentConsistency::Default)
+            .post()
+            .unwrap();
 
         // Post constraints that require search
 

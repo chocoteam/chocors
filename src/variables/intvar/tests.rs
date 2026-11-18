@@ -778,27 +778,35 @@ fn test_among() {
 }
 #[test]
 fn test_all_different() {
-    let model = Model::new(Some("AllDifferentTestModel"));
-    let x1 = model.int_var_bounded(1, 5, Some("x1"), None);
-    let x2 = model.int_var_bounded(1, 5, Some("x2"), None);
-    let x3 = model.int_var_bounded(1, 5, Some("x3"), None);
+    for consistency in [
+        AllDifferentConsistency::Default,
+        AllDifferentConsistency::ArcConsistency,
+        AllDifferentConsistency::BoundConsistency,
+        AllDifferentConsistency::FullConsistency,
+    ] {
+        let model = Model::new(Some("AllDifferentTestModel"));
+        let x1 = model.int_var_bounded(1, 5, Some("x1"), None);
+        let x2 = model.int_var_bounded(1, 5, Some("x2"), None);
+        let x3 = model.int_var_bounded(1, 5, Some("x3"), None);
 
-    // Post all_different constraint on the slice
-    (&[&x1, &x2, &x3][..]).all_different().post().unwrap();
+        (&[&x1, &x2, &x3][..])
+            .all_different(consistency)
+            .post()
+            .unwrap();
 
-    let solver = model.solver();
-    let solution = solver
-        .find_solution(&Criterion::default())
-        .expect("failed to find solution");
+        let solver = model.solver();
+        let solution = solver
+            .find_solution(&Criterion::default())
+            .unwrap_or_else(|| panic!("failed to find solution with {consistency:?}"));
 
-    let x1_val = solution.get_int_var(&x1).unwrap();
-    let x2_val = solution.get_int_var(&x2).unwrap();
-    let x3_val = solution.get_int_var(&x3).unwrap();
+        let x1_val = solution.get_int_var(&x1).unwrap();
+        let x2_val = solution.get_int_var(&x2).unwrap();
+        let x3_val = solution.get_int_var(&x3).unwrap();
 
-    // All values must be different
-    assert_ne!(x1_val, x2_val);
-    assert_ne!(x2_val, x3_val);
-    assert_ne!(x1_val, x3_val);
+        assert_ne!(x1_val, x2_val, "{consistency:?}");
+        assert_ne!(x2_val, x3_val, "{consistency:?}");
+        assert_ne!(x1_val, x3_val, "{consistency:?}");
+    }
 }
 
 #[test]
