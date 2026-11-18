@@ -13,9 +13,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: windows-latest
+            shell: pwsh
+          - os: macos-latest
+            shell: bash
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.shell }}
 
     steps:
       - uses: actions/checkout@v4
@@ -56,9 +63,15 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install maven -y --no-progress
-          echo "LIBCLANG_PATH=C:\\Program Files\\LLVM\\bin" >> "$GITHUB_ENV"
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
           # Chocolatey's Maven isn't on PATH until the next step
-          echo "C:\\ProgramData\\chocolatey\\lib\\maven\\apache-maven-*\\bin" >> "$GITHUB_PATH"
+          $mavenInstall = Get-ChildItem -Path 'C:\ProgramData\chocolatey\lib\maven' -Directory |
+            Where-Object { $_.Name -like 'apache-maven-*' } |
+            Select-Object -First 1
+          if (-not $mavenInstall) {
+            throw 'Could not find the Chocolatey Maven installation.'
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $mavenInstall.FullName 'bin')
 
       - name: Set RUST_BACKTRACE
         run: echo "RUST_BACKTRACE=1" >> "$GITHUB_ENV"
