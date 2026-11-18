@@ -8,49 +8,74 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: windows-latest
+            shell: pwsh
+          - os: macos-latest
+            shell: bash
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up GraalVM JDK
-        uses: graalvm/setup-graalvm@v1
+      - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '25'
           distribution: 'graalvm'
           native-image-job-reports: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set GRAALVM_HOME
         run: echo "GRAALVM_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
 
-      - name: Install Maven
+      # Needed for native-image on Windows
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Maven and LLVM (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y maven
+          sudo apt-get install -y maven llvm-dev libclang-dev clang
+          echo "LIBCLANG_PATH=$(llvm-config --libdir)" >> "$GITHUB_ENV"
 
-      - name: Install LLVM and Clang
+      - name: Install Maven and LLVM (macOS)
+        if: runner.os == 'macOS'
         run: |
-          sudo apt-get install -y llvm-dev libclang-dev clang
+          brew install maven llvm
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> "$GITHUB_ENV"
 
-      - name: Set LIBCLANG_PATH
+      - name: Install Maven and LLVM (Windows)
+        if: runner.os == 'Windows'
         run: |
-          LLVM_DIR="$(llvm-config --libdir)"
-          echo "LIBCLANG_PATH=$LLVM_DIR" >> "$GITHUB_ENV"
-          
+          choco install maven -y --no-progress
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          # Chocolatey's Maven isn't on PATH until the next step
+          $mavenInstall = Get-ChildItem -Path 'C:\ProgramData\chocolatey\lib\maven' -Directory |
+            Where-Object { $_.Name -like 'apache-maven-*' } |
+            Select-Object -First 1
+          if (-not $mavenInstall) {
+            throw 'Could not find the Chocolatey Maven installation.'
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $mavenInstall.FullName 'bin')
+
       - name: Set RUST_BACKTRACE
         run: echo "RUST_BACKTRACE=1" >> "$GITHUB_ENV"
 
-      - name: Build DLL (native shared library)
-        run: cargo xtask build-dll
-
-      - name: Generate Rust bindings
-        run: cargo xtask generate-bindings
-
-      - name: Run all tests
-        run: cargo xtask test-all
+      - run: cargo xtask build-dll
+      - run: cargo xtask generate-bindings
+      - run: cargo xtask test-all
