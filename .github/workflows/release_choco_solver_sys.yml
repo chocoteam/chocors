@@ -1,4 +1,4 @@
-name: Publish to crates.io
+name: Publish choco-solver-sys to crates.io
 on:
   workflow_dispatch:
 jobs:
